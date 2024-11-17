@@ -6,11 +6,11 @@ spec:
   replicas: 2
   selector:
     matchLabels:
-      app: flask-app-green
+      app: flask-app-green  # Green version label
   template:
     metadata:
       labels:
-        app: flask-app-green
+        app: flask-app-green  # Green version label
     spec:
       containers:
         - name: flask-app
