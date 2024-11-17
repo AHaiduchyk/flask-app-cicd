@@ -36,19 +36,22 @@ jobs:
       - name: Set up kubectl
         run: gcloud container clusters get-credentials flask-cluster --zone us-central1-a --project ${{ secrets.GCP_PROJECT_ID }}
 
-      # Deploy the Green (Stable) version initially
-      - name: Deploy Stable Green Version
+      # Sanitize version from client-payload (replace non-alphanumeric chars with '-')
+      - name: Sanitize version for Kubernetes labels
+        id: sanitize_version
         run: |
-          kubectl apply -f k8s/flask-deployment-green.yaml
-          kubectl apply -f k8s/flask-service.yaml  # This points to Green initially
+          version="${{ github.event.client_payload.version }}"
+          sanitized_version=$(echo "$version" | tr -c '[:alnum:]' '-')
+          echo "SANITIZED_VERSION=$sanitized_version" >> $GITHUB_ENV
+          echo "Sanitized version: $sanitized_version"
 
-      # Deploy the new version (Blue) for testing
+      # Deploy the new version (Blue)
       - name: Deploy New Version (Blue)
         run: |
           kubectl set image deployment/flask-deployment-blue flask-app=${{ github.event.client_payload.image }}
           kubectl rollout status deployment flask-deployment-blue
 
-      # Switch traffic to Blue (Manual approval step)
+      # Switch traffic to Blue (manual approval step)
       - name: Approve Traffic Switch
         uses: hmarr/auto-approve-action@v2
         with:
@@ -56,14 +59,14 @@ jobs:
 
       - name: Switch Traffic to Blue
         run: |
-          kubectl patch svc flask-service -p '{"spec":{"selector":{"app":"flask-app-blue"}}}'
+          kubectl patch svc flask-service -p "{\"spec\":{\"selector\":{\"app\":\"flask-app-${{ env.SANITIZED_VERSION }}\"}}}"
 
-      # Optionally, scale down Green Deployment
+      # Optionally, scale down Green
       - name: Scale Down Green Deployment
         run: |
           kubectl scale deployment flask-deployment-green --replicas=0
 
-      # Promote Blue to Green (Update the Green deployment)
+      # Promote Blue to Green
       - name: Promote Blue to Green
         run: |
           kubectl set image deployment/flask-deployment-green flask-app=${{ github.event.client_payload.image }}
@@ -72,7 +75,7 @@ jobs:
       # Update Kubernetes resource definitions in the GitHub repository
       - name: Update K8S Resource Definitions
         run: |
-
+          # Update the resource definitions with the sanitized version tag
           sed -i 's|image: anhaid/flask-app:.*|image: anhaid/flask-app:${{ github.event.client_payload.image }}|' k8s/flask-deployment-green.yaml
           sed -i 's|image: anhaid/flask-app:.*|image: anhaid/flask-app:${{ github.event.client_payload.image }}|' k8s/flask-deployment-blue.yaml
           

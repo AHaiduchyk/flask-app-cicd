@@ -4,7 +4,7 @@ metadata:
   name: flask-service
 spec:
   selector:
-    app: flask-app-${{ github.event.client_payload.version }}  # Dynamic selector based on Blue or Green version
+    app: flask-app-${{ github.event.client_payload.version }}  # Dynamically set version
   ports:
     - protocol: TCP
       port: 80
