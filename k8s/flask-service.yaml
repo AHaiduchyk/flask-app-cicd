@@ -4,7 +4,7 @@ metadata:
   name: flask-service
 spec:
   selector:
-    app: flask-app
+    app: flask-app-green  # Switch between flask-app-green or flask-app-blue for traffic
   ports:
     - protocol: TCP
       port: 80

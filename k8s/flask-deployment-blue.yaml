@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flask-deployment-blue
+  labels:
+    version: blue  # Add version label for clarity
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: flask-app-blue  # Blue version label
+  template:
+    metadata:
+      labels:
+        app: flask-app-blue  # Blue version label
+        version: blue        # Add version label for service selector
+    spec:
+      containers:
+        - name: flask-app
+          image: anhaid/flask-app:latest  # Blue version
+          ports:
+            - containerPort: 8080

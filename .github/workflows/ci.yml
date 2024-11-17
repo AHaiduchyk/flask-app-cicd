@@ -35,10 +35,10 @@ jobs:
           export PYTHONPATH=$(pwd)  # Add the current directory to the Python path
           pytest tests/
 
-      # Build Docker image
+      # Build Docker image for new version
       - name: Build Docker image
         run: |
-          docker build -t anhaid/flask-app:latest .
+          docker build -t anhaid/flask-app:new .
 
       # Log in to Docker Hub
       - name: Log in to Docker Hub
@@ -47,7 +47,15 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # Push Docker image to Docker Hub
+      # Push Docker image for new version
       - name: Push Docker image
         run: |
-          docker push anhaid/flask-app:latest
+          docker push anhaid/flask-app:new
+
+      # Trigger CD workflow with new image tag
+      - name: Trigger CD
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          repository: your-repo-name
+          event-type: deploy-new-version
+          client-payload: '{"image": "anhaid/flask-app:new"}'
