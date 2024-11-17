@@ -56,6 +56,6 @@ jobs:
       - name: Trigger CD
         uses: peter-evans/repository-dispatch@v2
         with:
-          repository: flask-app-cicd
+          repository: flask-app-cicd  # Ensure this is the correct repository
           event-type: deploy-new-version
-          client-payload: '{"image": "anhaid/flask-app:new"}'
+          client-payload: '{"image": "anhaid/flask-app:${{ github.sha }}"}'

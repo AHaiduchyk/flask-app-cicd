@@ -43,7 +43,7 @@ jobs:
           kubectl rollout status deployment flask-deployment-blue
 
       # Switch traffic to Blue (manual approval step)
-      - name: Wait for Approval to Switch Traffic
+      - name: Approve Traffic Switch
         uses: hmarr/auto-approve-action@v2
         with:
           approved-by: ${{ secrets.APPROVER }}
@@ -52,25 +52,27 @@ jobs:
         run: |
           kubectl patch svc flask-service -p '{"spec":{"selector":{"app":"flask-app-blue"}}}'
 
-      # Validate New Version (Optional Step)
-      - name: Validate Blue Deployment
-        run: |
-          kubectl get pods -l app=flask-app-blue
-          curl -f http://flask-service.default.svc.cluster.local:8080/health
-
-      # Scale Down Green Deployment
+      # Optionally, scale down Green
       - name: Scale Down Green Deployment
         run: |
           kubectl scale deployment flask-deployment-green --replicas=0
 
-      # Update Docker tag to green
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Promote to Green
+      # Promote Blue to Green
+      - name: Promote Blue to Green
         run: |
-          docker tag anhaid/flask-app:new anhaid/flask-app:green
-          docker push anhaid/flask-app:green
+          kubectl set image deployment/flask-deployment-green flask-app=${{ github.event.client_payload.image }}
+          kubectl rollout status deployment flask-deployment-green
+          
+      # Update Kubernetes resource definitions in the GitHub repository
+      - name: Update K8S Resource Definitions
+        run: |
+          # Update the resource definitions with the new image tag (if necessary)
+          sed -i 's|image: anhaid/flask-app:.*|image: anhaid/flask-app:${{ github.event.client_payload.image }}|' k8s/flask-deployment-green.yaml
+          sed -i 's|image: anhaid/flask-app:.*|image: anhaid/flask-app:${{ github.event.client_payload.image }}|' k8s/flask-deployment-blue.yaml
+          
+          # Commit and push the changes to GitHub
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add k8s/flask-deployment-green.yaml k8s/flask-deployment-blue.yaml
+          git commit -m "Update Kubernetes resources with new image"
+          git push origin main
