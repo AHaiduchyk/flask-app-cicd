@@ -3,51 +3,41 @@ name: CD Workflow
 on:
   push:
     branches:
-      - main  # Triggers on push to the main branch
+      - main
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest  # Uses Ubuntu for the job's environment
+    runs-on: ubuntu-latest
 
     steps:
-      # Checkout the code from the GitHub repository
+      # Checkout the code
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Set up Google Cloud SDK to interact with Google Cloud services
+      # Set up Google Cloud SDK
       - name: Set up Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
         with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}  # Uses secret for GCP project ID
-          credentials_json: ${{ secrets.GCP_CREDENTIALS }}  # Uses secret for Google Cloud credentials
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
-      # Authenticate to Google Cloud using the credentials JSON
+      # Authenticate to Google Cloud
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v0
         with:
-          credentials_json: ${{ secrets.GCP_CREDENTIALS }}  # Uses secret for Google Cloud credentials
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
-      # Install the gke-gcloud-auth-plugin for GKE authentication
+      # Install gke-gcloud-auth-plugin for authentication with GKE
       - name: Install gke-gcloud-auth-plugin
         run: |
           gcloud components install gke-gcloud-auth-plugin
 
-      # Configure kubectl to use the credentials and interact with the GKE cluster
+      # Configure kubectl to use GKE
       - name: Set up kubectl
-        run: |
-          gcloud container clusters get-credentials flask-cluster --zone us-central1-a --project ${{ secrets.GCP_PROJECT_ID }}
+        run: gcloud container clusters get-credentials flask-cluster --zone us-central1-a --project ${{ secrets.GCP_PROJECT_ID }}
 
-      # Deploy the application to GKE using kubectl
+      # Deploy to GKE
       - name: Deploy to GKE
         run: |
-          kubectl apply -f k8s/flask-deployment.yaml  # Deploy Flask application (Deployment)
-          kubectl apply -f k8s/flask-service.yaml  # Deploy service for the Flask app
-
-      # Optional: Update resources definitions in GitHub repository (e.g., for new configurations)
-      - name: Commit and push updated resources to GitHub
-        run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          git add .  # Add all changes in the repository
-          git commit -m "Update Kubernetes resources after deployment" || echo "No changes to commit"
-          git push origin main  # Push the changes back to GitHub (e.g., update YAML files if needed)
+          kubectl apply -f k8s/flask-deployment.yaml
+          kubectl apply -f k8s/flask-service.yaml
