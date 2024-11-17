@@ -2,21 +2,18 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: flask-deployment-green
-  labels:
-    version: green  # Add version label for clarity
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: flask-app-green  # Green version label
+      app: flask-app-green
   template:
     metadata:
       labels:
-        app: flask-app-green  # Green version label
-        version: green        # Add version label for service selector
+        app: flask-app-green
     spec:
       containers:
         - name: flask-app
-          image: anhaid/flask-app:green  # Green version
+          image: anhaid/flask-app:${{ github.event.client_payload.image }}  # Dynamically updated image tag
           ports:
             - containerPort: 8080

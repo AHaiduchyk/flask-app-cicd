@@ -36,13 +36,19 @@ jobs:
       - name: Set up kubectl
         run: gcloud container clusters get-credentials flask-cluster --zone us-central1-a --project ${{ secrets.GCP_PROJECT_ID }}
 
-      # Deploy the new version (Blue)
+      # Deploy the Green (Stable) version initially
+      - name: Deploy Stable Green Version
+        run: |
+          kubectl apply -f k8s/flask-deployment-green.yaml
+          kubectl apply -f k8s/flask-service.yaml  # This points to Green initially
+
+      # Deploy the new version (Blue) for testing
       - name: Deploy New Version (Blue)
         run: |
           kubectl set image deployment/flask-deployment-blue flask-app=${{ github.event.client_payload.image }}
           kubectl rollout status deployment flask-deployment-blue
 
-      # Switch traffic to Blue (manual approval step)
+      # Switch traffic to Blue (Manual approval step)
       - name: Approve Traffic Switch
         uses: hmarr/auto-approve-action@v2
         with:
@@ -52,12 +58,12 @@ jobs:
         run: |
           kubectl patch svc flask-service -p '{"spec":{"selector":{"app":"flask-app-blue"}}}'
 
-      # Optionally, scale down Green
+      # Optionally, scale down Green Deployment
       - name: Scale Down Green Deployment
         run: |
           kubectl scale deployment flask-deployment-green --replicas=0
 
-      # Promote Blue to Green
+      # Promote Blue to Green (Update the Green deployment)
       - name: Promote Blue to Green
         run: |
           kubectl set image deployment/flask-deployment-green flask-app=${{ github.event.client_payload.image }}
@@ -66,7 +72,7 @@ jobs:
       # Update Kubernetes resource definitions in the GitHub repository
       - name: Update K8S Resource Definitions
         run: |
-          # Update the resource definitions with the new image tag (if necessary)
+
           sed -i 's|image: anhaid/flask-app:.*|image: anhaid/flask-app:${{ github.event.client_payload.image }}|' k8s/flask-deployment-green.yaml
           sed -i 's|image: anhaid/flask-app:.*|image: anhaid/flask-app:${{ github.event.client_payload.image }}|' k8s/flask-deployment-blue.yaml
           

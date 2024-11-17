@@ -32,10 +32,10 @@ jobs:
       # Run unit tests
       - name: Run unit tests
         run: |
-          export PYTHONPATH=$(pwd)  # Add the current directory to the Python path
+          export PYTHONPATH=$(pwd)  
           pytest tests/
 
-      # Build Docker image for new version
+      # Build Docker image for new version (tagged as "new")
       - name: Build Docker image
         run: |
           docker build -t anhaid/flask-app:new .
@@ -47,15 +47,16 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # Push Docker image for new version
+      # Push Docker image for new version (tagged as "new")
       - name: Push Docker image
         run: |
           docker push anhaid/flask-app:new
 
-      # Trigger CD workflow with new image tag
+      # Trigger CD workflow with new image tag (dispatch event to CD repo)
       - name: Trigger CD
         uses: peter-evans/repository-dispatch@v2
         with:
-          repository: flask-app-cicd  # Ensure this is the correct repository
-          event-type: deploy-new-version
-          client-payload: '{"image": "anhaid/flask-app:${{ github.sha }}"}'
+          repository: flask-app-cicd  # Target repo for CD
+          event-type: deploy-new-version  # Custom event name
+          client-payload: '{"image": "anhaid/flask-app:new"}' 
+          token: ${{ secrets.CD_TRIGGER_TOKEN }}  

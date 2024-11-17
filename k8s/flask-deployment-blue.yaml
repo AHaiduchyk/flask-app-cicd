@@ -17,6 +17,6 @@ spec:
     spec:
       containers:
         - name: flask-app
-          image: anhaid/flask-app:latest  # Blue version
+          image: anhaid/flask-app:${{ github.event.client_payload.image }}  # Dynamically updated image tag
           ports:
             - containerPort: 8080
