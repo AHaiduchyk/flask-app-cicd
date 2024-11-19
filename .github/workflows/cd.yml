@@ -41,10 +41,9 @@ jobs:
         id: sanitize_version
         run: |
           version="${{ github.event.client_payload.version }}"
-          echo "$version"
-          sanitized_version=$(echo "$version" | tr -c '[:alnum:].' '_')
-          echo "SANITIZED_VERSION=$sanitized_version" >> $GITHUB_ENV
-          echo "Sanitized version: $sanitized_version"
+          echo "Original version: $version"
+          sanitized_version="${version//./_}"  # Replace dots with underscores
+          echo "Sanitized version: $sanitized_version" >> $GITHUB_ENV
 
       # Deploy to Green Deployment
       - name: Deploy New Version (Green)
