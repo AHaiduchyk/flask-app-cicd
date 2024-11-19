@@ -5,7 +5,7 @@ metadata:
   labels:
     version: green
 spec:
-  replicas: 0  # Initially 0 replicas
+  replicas: 1
   selector:
     matchLabels:
       app: flask-app-green
