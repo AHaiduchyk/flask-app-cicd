@@ -45,34 +45,38 @@ jobs:
           echo "SANITIZED_VERSION=$sanitized_version" >> $GITHUB_ENV
           echo "Sanitized version: $sanitized_version"
 
-      # Deploy the new version (Blue)
-      - name: Deploy New Version (Blue)
+      # Deploy to Green Deployment
+      - name: Deploy New Version (Green)
         run: |
-          kubectl set image deployment/flask-deployment-blue flask-app=${{ github.event.client_payload.image }}
-          kubectl rollout status deployment flask-deployment-blue
+          kubectl apply -f k8s/flask-deployment-green.yaml
+          kubectl set image deployment/flask-deployment-green flask-app=${{ github.event.client_payload.image }}
+          kubectl rollout status deployment/flask-deployment-green
 
-      # Manual approval step before switching traffic
-      - name: Wait for manual approval (via GitHub UI)
+      # Automated Testing (Optional)
+      - name: Run Unit Tests
         run: |
-          echo "Waiting for manual approval to switch traffic to Blue..."
-        if: github.event_name == 'workflow_dispatch'
+          export PYTHONPATH=$(pwd)
+          pytest tests/  # Assuming your tests are in the "tests" directory
 
-      # Switch Traffic to Blue after manual approval
-      - name: Switch Traffic to Blue
+      #  Consider adding additional automated testing steps here (e.g., integration tests)
+
+
+      # Switch Traffic to Green
+      - name: Switch Traffic to Green
         run: |
           kubectl patch svc flask-service -p "{\"spec\":{\"selector\":{\"app\":\"flask-app-${{ env.SANITIZED_VERSION }}\"}}}"
 
-      # Optionally, scale down Green
-      - name: Scale Down Green Deployment
+      # Optionally, scale down Blue (after verification)
+      - name: Scale Down Blue Deployment 
         run: |
-          kubectl scale deployment flask-deployment-green --replicas=0
+          kubectl scale deployment/flask-deployment-blue --replicas=0
 
-      # Promote Blue to Green
+      # Promote Green to Blue (Optional)
       - name: Promote Blue to Green
         run: |
-          kubectl set image deployment/flask-deployment-green flask-app=${{ github.event.client_payload.image }}
-          kubectl rollout status deployment flask-deployment-green
-          
+          kubectl set image deployment/flask-deployment-blue flask-app=${{ github.event.client_payload.image }}
+          kubectl rollout status deployment/flask-deployment-blue
+
       # Update Kubernetes resource definitions in the GitHub repository
       - name: Update K8S Resource Definitions
         run: |
