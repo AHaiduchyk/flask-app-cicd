@@ -37,13 +37,13 @@ jobs:
         run: gcloud container clusters get-credentials flask-cluster --zone us-central1-a --project ${{ secrets.GCP_PROJECT_ID }}
 
       
-      - name: Sanitize version for Kubernetes labels
-        id: sanitize_version
-        run: |
-          version="${{ github.event.client_payload.version }}"
-          echo "Original version: $version"
-          sanitized_version="${version//./_}"  # Replace dots with underscores
-          echo "Sanitized version: $sanitized_version" >> $GITHUB_ENV
+      # - name: Sanitize version for Kubernetes labels
+      #   id: sanitize_version
+      #   run: |
+      #     version="${{ github.event.client_payload.version }}"
+      #     echo "Original version: $version"
+      #     sanitized_version="${version//./_}"  # Replace dots with underscores
+      #     echo "Sanitized version: $sanitized_version" >> $GITHUB_ENV
 
       # Deploy to Green Deployment
       - name: Deploy New Version (Green)
@@ -90,7 +90,9 @@ jobs:
       # Switch Traffic to Green
       - name: Switch Traffic to Green
         run: |
-          kubectl patch svc flask-service -p "{\"spec\":{\"selector\":{\"app\":\"flask-app-$SANITIZED_VERSION\"}}}"
+          version="${{ github.event.client_payload.version }}"
+          echo "{\"spec\":{\"selector\":{\"app\":\"flask-app-$version\"}}}"
+          kubectl patch svc flask-service -p "{\"spec\":{\"selector\":{\"app\":\"flask-app-$version\"}}}"
 
       # Optionally, scale down Blue (after verification)
       - name: Scale Down Blue Deployment 
