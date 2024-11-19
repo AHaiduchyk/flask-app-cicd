@@ -66,37 +66,63 @@ jobs:
         run: |
           curl -X GET http://$GREEN_DEPLOYMENT_SERVICE_IP:$GREEN_DEPLOYMENT_SERVICE_PORT/status -s | jq .status
 
-      - name: Check Status Response
-        run: |
-          for i in {1..5}; do
-            URL="http://$GREEN_DEPLOYMENT_EXTERNAL_IP:$GREEN_DEPLOYMENT_SERVICE_PORT/status"
-            echo "Checking status: $URL"
-            STATUS_RESPONSE=$(curl -X GET "$URL" -s)
-            
-            # Use jq to parse the JSON response and extract the "status" field
-            STATUS=$(echo "$STATUS_RESPONSE" | jq -r .status)
-
-            if [[ "$STATUS" == "running" ]]; then
-              echo "Status check successful."
-              break
-            else
-              echo "Status check failed. Expected 'running' status, got '$STATUS'. Retrying in $((2**i)) seconds..."
-              sleep $((2**i))
-            fi
-          done
-          if [[ "$STATUS" != "running" ]]; then
-            echo "Status check failed after 5 retries. Exiting the job."
-            exit 1
-          fi
-      
-
+  
       # Switch Traffic to Green
       - name: Switch Traffic to Green
         run: |
           version="${{ github.event.client_payload.version }}"
-          echo "{\"spec\":{\"selector\":{\"app\":\"flask-app-$version\"}}}"
-          kubectl patch svc flask-service -p "{\"spec\":{\"selector\":{\"app\":\"flask-app-$version\"}}}"
+          echo "{\"spec\":{\"selector\":{\"app\":\"flask-app-green\"}}}"
+          kubectl patch svc flask-service -p "{\"spec\":{\"selector\":{\"app\":\"flask-app-green\"}}}"
 
+
+      - name: Wait for LoadBalancer to be available
+        run: |
+          for i in {1..10}; do
+            GREEN_DEPLOYMENT_EXTERNAL_IP=$(kubectl get service flask-service -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+            if [[ -n "$GREEN_DEPLOYMENT_EXTERNAL_IP" ]]; then
+              echo "External IP is available: $GREEN_DEPLOYMENT_EXTERNAL_IP"
+              break
+            else
+              echo "Waiting for LoadBalancer IP... Retry $i/10"
+              sleep 10
+            fi
+          done
+          if [[ -z "$GREEN_DEPLOYMENT_EXTERNAL_IP" ]]; then
+            echo "LoadBalancer IP not available after 10 retries. Exiting the job."
+            exit 1
+          fi
+
+
+      - name: Wait for Pods to be Running
+        run: |
+          for i in {1..5}; do
+            POD_STATUS=$(kubectl get pods -l app=flask-app-green -o jsonpath='{.items[0].status.phase}')
+            if [[ "$POD_STATUS" == "Running" ]]; then
+              echo "Pods are running."
+              break
+            else
+              echo "Pods not ready yet. Retrying..."
+              sleep 10
+            fi
+          done
+          if [[ "$POD_STATUS" != "Running" ]]; then
+            echo "Pods failed to start after 5 retries. Exiting the job."
+            exit 1
+          fi
+
+      - name: Trigger Status Check
+        run: |
+          URL="http://$GREEN_DEPLOYMENT_EXTERNAL_IP:$GREEN_DEPLOYMENT_SERVICE_PORT/status"
+          echo "Checking status: $URL"
+          STATUS_RESPONSE=$(curl -X GET "$URL" -s)
+          STATUS=$(echo "$STATUS_RESPONSE" | jq -r .status)
+
+          if [[ "$STATUS" == "running" ]]; then
+            echo "Status check successful."
+          else
+            echo "Status check failed. Expected 'running' status, got '$STATUS'."
+            exit 1
+          fi
 
 
       # Optionally, scale down Blue (after verification)
