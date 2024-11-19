@@ -38,7 +38,7 @@ jobs:
       # Build Docker image for new version (tagged as "new")
       - name: Build Docker image
         run: |
-          docker build -t anhaid/flask-app:new .
+          docker build -t anhaid/flask-app:new1 
 
       # Log in to Docker Hub
       - name: Log in to Docker Hub
@@ -58,5 +58,5 @@ jobs:
         with:
           repository: AHaiduchyk/flask-app-cicd  # Target repo for CD
           event-type: deploy-new-version  # Custom event name
-          client-payload: '{"image": "anhaid/flask-app:new", "version": "numeric"}' 
+          client-payload: '{"image": "anhaid/flask-app:new1", "version": "numeric"}' 
           token: ${{ secrets.CD_TRIGGER_TOKEN }}  
