@@ -65,8 +65,18 @@ jobs:
 
       - name: Check Status Response
         run: |
-          if [ "$STATUS_RESPONSE" != "\"running\"" ]; then
-            echo "Status check failed. Expected 'running', got '$STATUS_RESPONSE'"
+          for i in {1..5}; do
+            STATUS_RESPONSE=$(curl -X GET http://$GREEN_DEPLOYMENT_SERVICE_IP:$GREEN_DEPLOYMENT_SERVICE_PORT/status -s)
+            if [[ "$STATUS_RESPONSE" =~ "\"status\":\"running\"" ]]; then
+              echo "Status check successful."
+              break
+            else
+              echo "Status check failed. Expected 'running' status. Retrying in $((2**i)) seconds..."
+              sleep $((2**i))
+            fi
+          done
+          if [[ "$STATUS_RESPONSE" =~ "\"status\":\"running\"" ]]; then
+            echo "Status check failed after 5 retries. Exiting the job."
             exit 1
           fi
       
