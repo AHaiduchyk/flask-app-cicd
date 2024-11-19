@@ -54,9 +54,9 @@ jobs:
 
       - name: Get Green Deployment Info
         run: |
-          GREEN_DEPLOYMENT_SERVICE_IP=$(kubectl get service flask-service -o jsonpath='{.spec.clusterIP}')
+          GREEN_DEPLOYMENT_EXTERNAL_IP=$(kubectl get service flask-service -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
           GREEN_DEPLOYMENT_SERVICE_PORT=$(kubectl get service flask-service -o jsonpath='{.spec.ports[0].port}')
-          echo "GREEN_DEPLOYMENT_IP=$GREEN_DEPLOYMENT_SERVICE_IP" >> $GITHUB_ENV
+          echo "GREEN_DEPLOYMENT_EXTERNAL_IP=$GREEN_DEPLOYMENT_EXTERNAL_IP" >> $GITHUB_ENV
           echo "GREEN_DEPLOYMENT_SERVICE_PORT=$GREEN_DEPLOYMENT_SERVICE_PORT" >> $GITHUB_ENV
 
       - name: Trigger Status Check
