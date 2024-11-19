@@ -5,6 +5,9 @@ on:
     types:
       - deploy-new-version
 
+# permissions:
+#   contents: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -111,10 +114,14 @@ jobs:
           # Update the resource definitions with the sanitized version tag
           sed -i 's|image: anhaid/flask-app:.*|image: anhaid/flask-app:${{ github.event.client_payload.image }}|' k8s/flask-deployment-green.yaml
           sed -i 's|image: anhaid/flask-app:.*|image: anhaid/flask-app:${{ github.event.client_payload.image }}|' k8s/flask-deployment-blue.yaml
-          
-          # Commit and push the changes to GitHub
+      
+          # Configure Git
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
+          
+          # Use GITHUB_TOKEN for authentication
+          git remote set-url origin https://${{ secrets.CD_TRIGGER_TOKEN }}@github.com/${{ github.repository }}
+
           git add k8s/flask-deployment-green.yaml k8s/flask-deployment-blue.yaml
           git commit -m "Update Kubernetes resources with new image"
           git push origin main
