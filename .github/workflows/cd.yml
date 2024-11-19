@@ -39,14 +39,6 @@ jobs:
       - name: Set up kubectl
         run: gcloud container clusters get-credentials flask-cluster --zone us-central1-a --project ${{ secrets.GCP_PROJECT_ID }}
 
-      
-      # - name: Sanitize version for Kubernetes labels
-      #   id: sanitize_version
-      #   run: |
-      #     version="${{ github.event.client_payload.version }}"
-      #     echo "Original version: $version"
-      #     sanitized_version="${version//./_}"  # Replace dots with underscores
-      #     echo "Sanitized version: $sanitized_version" >> $GITHUB_ENV
 
       # Deploy to Green Deployment
       - name: Deploy New Version (Green)
@@ -62,20 +54,7 @@ jobs:
           echo "GREEN_DEPLOYMENT_EXTERNAL_IP=$GREEN_DEPLOYMENT_EXTERNAL_IP" >> $GITHUB_ENV
           echo "GREEN_DEPLOYMENT_SERVICE_PORT=$GREEN_DEPLOYMENT_SERVICE_PORT" >> $GITHUB_ENV
 
-      - name: Trigger Status Check
-        run: |
-          curl -X GET http://$GREEN_DEPLOYMENT_SERVICE_IP:$GREEN_DEPLOYMENT_SERVICE_PORT/status -s | jq .status
-
-  
-      # Switch Traffic to Green
-      - name: Switch Traffic to Green
-        run: |
-          version="${{ github.event.client_payload.version }}"
-          echo "{\"spec\":{\"selector\":{\"app\":\"flask-app-green\"}}}"
-          kubectl patch svc flask-service -p "{\"spec\":{\"selector\":{\"app\":\"flask-app-green\"}}}"
-
-
-      - name: Wait for LoadBalancer to be available
+            - name: Wait for LoadBalancer to be available
         run: |
           for i in {1..10}; do
             GREEN_DEPLOYMENT_EXTERNAL_IP=$(kubectl get service flask-service -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
@@ -123,18 +102,19 @@ jobs:
             echo "Status check failed. Expected 'running' status, got '$STATUS'."
             exit 1
           fi
-
-
-      # Optionally, scale down Blue (after verification)
-      - name: Scale Down Blue Deployment 
+  
+      # Switch Traffic to Green
+      - name: Switch Traffic to Green
         run: |
-          kubectl scale deployment/flask-deployment-blue --replicas=0
+          version="${{ github.event.client_payload.version }}"
+          echo "{\"spec\":{\"selector\":{\"app\":\"flask-app-green\"}}}"
+          kubectl patch svc flask-service -p "{\"spec\":{\"selector\":{\"app\":\"flask-app-green\"}}}"
 
-      # Promote Green to Blue (Optional)
-      - name: Promote Blue to Green
+
+      # Change label from Green to Blue
+      - name: Promote Green to Blue
         run: |
-          kubectl set image deployment/flask-deployment-blue flask-app=${{ github.event.client_payload.image }}
-          kubectl rollout status deployment/flask-deployment-blue
+          kubectl label pods -l app=flask-app-green env=blue --overwrite
 
       # Update Kubernetes resource definitions in the GitHub repository
       - name: Update K8S Resource Definitions
