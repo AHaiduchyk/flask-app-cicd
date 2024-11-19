@@ -66,16 +66,22 @@ jobs:
       - name: Check Status Response
         run: |
           for i in {1..5}; do
-            STATUS_RESPONSE=$(curl -X GET http://$GREEN_DEPLOYMENT_SERVICE_IP:$GREEN_DEPLOYMENT_SERVICE_PORT/status -s)
-            if [[ "$STATUS_RESPONSE" =~ "\"status\":\"running\"" ]]; then
+            URL="http://$GREEN_DEPLOYMENT_SERVICE_IP:$GREEN_DEPLOYMENT_SERVICE_PORT/status"
+            echo "Checking status: $URL"
+            STATUS_RESPONSE=$(curl -X GET "$URL" -s)
+            
+            # Use jq to parse the JSON response and extract the "status" field
+            STATUS=$(echo "$STATUS_RESPONSE" | jq -r .status)
+
+            if [[ "$STATUS" == "running" ]]; then
               echo "Status check successful."
               break
             else
-              echo "Status check failed. Expected 'running' status. Retrying in $((2**i)) seconds..."
+              echo "Status check failed. Expected 'running' status, got '$STATUS'. Retrying in $((2**i)) seconds..."
               sleep $((2**i))
             fi
           done
-          if [[ "$STATUS_RESPONSE" =~ "\"status\":\"running\"" ]]; then
+          if [[ "$STATUS" != "running" ]]; then
             echo "Status check failed after 5 retries. Exiting the job."
             exit 1
           fi
