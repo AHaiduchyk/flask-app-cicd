@@ -38,7 +38,7 @@ jobs:
       # Build Docker image for new version (tagged as "new")
       - name: Build Docker image
         run: |
-          docker build -t anhaid/flask-app:new1 
+          docker build -t anhaid/flask-app:new1 .
 
       # Log in to Docker Hub
       - name: Log in to Docker Hub
