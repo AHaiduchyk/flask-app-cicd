@@ -5,7 +5,7 @@ metadata:
   labels:
     version: numeric
 spec:
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
       app: flask-app-numeric
