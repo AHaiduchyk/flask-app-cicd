@@ -58,5 +58,5 @@ jobs:
         with:
           repository: AHaiduchyk/flask-app-cicd  # Target repo for CD
           event-type: deploy-new-version  # Custom event name
-          client-payload: '{"image": "anhaid/flask-app:new", "version": "green"}' 
+          client-payload: '{"image": "anhaid/flask-app:new", "version": "numeric"}' 
           token: ${{ secrets.CD_TRIGGER_TOKEN }}  
