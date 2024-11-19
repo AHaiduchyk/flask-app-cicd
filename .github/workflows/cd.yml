@@ -90,8 +90,8 @@ jobs:
 
       # Switch Traffic to Green
       - name: Switch Traffic to Green
-      run: |
-        kubectl patch svc flask-service -p "{\"spec\":{\"selector\":{\"app\":\"flask-app-$SANITIZED_VERSION\"}}}"
+        run: |
+          kubectl patch svc flask-service -p "{\"spec\":{\"selector\":{\"app\":\"flask-app-$SANITIZED_VERSION\"}}}"
 
       # Optionally, scale down Blue (after verification)
       - name: Scale Down Blue Deployment 
