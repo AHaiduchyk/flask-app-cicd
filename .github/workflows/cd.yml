@@ -54,7 +54,7 @@ jobs:
           echo "GREEN_DEPLOYMENT_EXTERNAL_IP=$GREEN_DEPLOYMENT_EXTERNAL_IP" >> $GITHUB_ENV
           echo "GREEN_DEPLOYMENT_SERVICE_PORT=$GREEN_DEPLOYMENT_SERVICE_PORT" >> $GITHUB_ENV
 
-            - name: Wait for LoadBalancer to be available
+      - name: Wait for LoadBalancer to be available
         run: |
           for i in {1..10}; do
             GREEN_DEPLOYMENT_EXTERNAL_IP=$(kubectl get service flask-service -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
