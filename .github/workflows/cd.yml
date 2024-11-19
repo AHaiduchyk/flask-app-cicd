@@ -5,8 +5,8 @@ on:
     types:
       - deploy-new-version
 
-# permissions:
-#   contents: write
+permissions:
+  contents: write
 
 jobs:
   deploy:
