@@ -66,7 +66,7 @@ jobs:
       - name: Check Status Response
         run: |
           for i in {1..5}; do
-            URL="http://$GREEN_DEPLOYMENT_SERVICE_IP:$GREEN_DEPLOYMENT_SERVICE_PORT/status"
+            URL="http://$GREEN_DEPLOYMENT_EXTERNAL_IP:$GREEN_DEPLOYMENT_SERVICE_PORT/status"
             echo "Checking status: $URL"
             STATUS_RESPONSE=$(curl -X GET "$URL" -s)
             
