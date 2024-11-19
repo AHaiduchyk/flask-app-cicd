@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flask-deployment-numeric
+  labels:
+    version: numeric
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: flask-app-numeric
+  template:
+    metadata:
+      labels:
+        app: flask-app-numeric
+    spec:
+      containers:
+        - name: flask-app
+          image: anhaid/flask-app:${{ github.event.client_payload.image }}
+          ports:
+            - containerPort: 8080

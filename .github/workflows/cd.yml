@@ -43,9 +43,9 @@ jobs:
       # Deploy to Green Deployment
       - name: Deploy New Version (Green)
         run: |
-          kubectl apply -f k8s/flask-deployment-green.yaml
-          kubectl set image deployment/flask-deployment-green flask-app=${{ github.event.client_payload.image }}
-          kubectl rollout status deployment/flask-deployment-green
+          kubectl apply -f k8s/flask-deployment-{{ github.event.client_payload.version }}.yaml
+          kubectl set image deployment/flask-deployment-{{ github.event.client_payload.version }} flask-app=${{ github.event.client_payload.image }}
+          kubectl rollout status deployment/flask-deployment-{{ github.event.client_payload.version }}
 
       - name: Get Green Deployment Info
         run: |
@@ -75,7 +75,7 @@ jobs:
       - name: Wait for Pods to be Running
         run: |
           for i in {1..5}; do
-            POD_STATUS=$(kubectl get pods -l app=flask-app-green -o jsonpath='{.items[0].status.phase}')
+            POD_STATUS=$(kubectl get pods -l app=flask-app-{{ github.event.client_payload.version }} -o jsonpath='{.items[0].status.phase}')
             if [[ "$POD_STATUS" == "Running" ]]; then
               echo "Pods are running."
               break
@@ -107,21 +107,15 @@ jobs:
       - name: Switch Traffic to Green
         run: |
           version="${{ github.event.client_payload.version }}"
-          echo "{\"spec\":{\"selector\":{\"app\":\"flask-app-green\"}}}"
-          kubectl patch svc flask-service -p "{\"spec\":{\"selector\":{\"app\":\"flask-app-green\"}}}"
+          echo "{\"spec\":{\"selector\":{\"app\":\"flask-app-{{ github.event.client_payload.version }}\"}}}"
+          kubectl patch svc flask-service -p "{\"spec\":{\"selector\":{\"app\":\"flask-app-{{ github.event.client_payload.version }}\"}}}"
 
-
-      # Change label from Green to Blue
-      - name: Promote Green to Blue
-        run: |
-          kubectl label pods -l app=flask-app-green env=blue --overwrite
 
       # Update Kubernetes resource definitions in the GitHub repository
       - name: Update K8S Resource Definitions
         run: |
           # Update the resource definitions with the sanitized version tag
-          sed -i 's|image: anhaid/flask-app:.*|image: anhaid/flask-app:${{ github.event.client_payload.image }}|' k8s/flask-deployment-green.yaml
-          sed -i 's|image: anhaid/flask-app:.*|image: anhaid/flask-app:${{ github.event.client_payload.image }}|' k8s/flask-deployment-blue.yaml
+          sed -i 's|image: anhaid/flask-app:.*|image: anhaid/flask-app:${{ github.event.client_payload.image }}|' k8s/flask-deployment-{{ github.event.client_payload.version }}.yaml
       
           # Configure Git
           git config --global user.name "GitHub Actions"
@@ -130,6 +124,6 @@ jobs:
           # Use GITHUB_TOKEN for authentication
           git remote set-url origin https://${{ secrets.CD_TRIGGER_TOKEN }}@github.com/${{ github.repository }}
 
-          git add k8s/flask-deployment-green.yaml k8s/flask-deployment-blue.yaml
+          git add k8s/flask-deployment-{{ github.event.client_payload.version }}.yaml 
           git commit -m "Update Kubernetes resources with new image"
           git push origin main
