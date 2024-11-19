@@ -43,7 +43,7 @@ jobs:
       # Deploy to Green Deployment
       - name: Deploy New Version (Green)
         run: |
-          kubectl apply -f k8s/flask-deployment-{{ github.event.client_payload.version }}.yaml
+          kubectl apply -f k8s/flask-deployment-${{ github.event.client_payload.version }}.yaml
           kubectl set image deployment/flask-deployment-{{ github.event.client_payload.version }} flask-app=${{ github.event.client_payload.image }}
           kubectl rollout status deployment/flask-deployment-{{ github.event.client_payload.version }}
 
