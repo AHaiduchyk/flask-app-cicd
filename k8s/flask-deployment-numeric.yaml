@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
         - name: flask-app
-          image: anhaid/flask-app:${{ github.event.client_payload.image }}
+          image: anhaid/flask-app:anhaid/flask-app:new
           ports:
             - containerPort: 8080
